@@ -34,3 +34,7 @@ update({ title: 'Hello World !' })
 
 * Enjoy !
 
+## Implementation notes
+
+* Bindings are set at node / attribute level.
+* For a node, it is possible to mix static content with computed one but an error would clear the node value.
