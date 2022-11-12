@@ -1,4 +1,5 @@
 (function (factory) {
+  // Stryker disable all : bootstrap code
   'use strict'
   // istanbul ignore else
   if (typeof module !== 'undefined' && module.exports) {
@@ -8,32 +9,35 @@
     factory((0, eval)('this'))
   }
 }(function (exports) {
+  // Stryker restore all
   'use strict'
 
-  function compile (source, ...params) {
-    // eslint-disable-next-line no-new-func
-    return new Function(...params, `return function(${params.join(',')}) { ${source} }`)()
-  }
-
-  function bindNodeValue (node, bindings) {
-    const parsed = node.nodeValue.split(/{{((?:[^}]|}[^}])*)}}/)
+  function bindTextNode (node, bindings) {
+    const parsed = node.nodeValue.split(/{{((?:[^}]|}[^}])+)}}/)
     if (parsed.length > 1) {
-      const expression = compile(`with (__context__) { return [
-        ${parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')}
-      ].join('') }`, '__context__')
+      const source = `with (__context__) { return [${
+        parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')
+      }].join('') }`
+      // eslint-disable-next-line no-new-func
+      const expression = new Function(`return function(__context__) { ${source} }`)()
 
-      let previousValue
+      const parent = node.parentNode
+      let value
 
       bindings.push(function refreshNodeValue (context, changes) {
-        let value
+        let newValue
         try {
-          value = expression(context)
+          newValue = expression(context)
         } catch (e) {
-          value = ''
+          newValue = ''
         }
-        if (value !== previousValue) {
-          previousValue = value
-          changes.push(() => { node.nodeValue = value })
+        if (newValue !== value) {
+          const newChild = parent.ownerDocument.createTextNode(newValue)
+          value = newValue
+          changes.push(() => {
+            parent.replaceChild(newChild, node)
+            node = newChild
+          })
         }
       })
     }
@@ -46,10 +50,10 @@
 
     function traverse (node) {
       if (node.nodeType === TEXT_NODE) {
-        bindNodeValue(node, bindings)
+        bindTextNode(node, bindings)
       }
       if (node.nodeType === ELEMENT_NODE) {
-        [].slice.call(node.childNodes).forEach(traverse)
+        Array.prototype.slice.call(node.childNodes).forEach(traverse)
       }
     }
 
@@ -61,12 +65,14 @@
   exports.punybind = function (root) {
     const bindings = parse(root)
 
-    return function (context) {
+    function update (context) {
       const changes = []
       bindings.forEach(binding => binding(context, changes))
-      if (changes.length) {
-        changes.forEach(change => change())
-      }
+      changes.forEach(change => change())
     }
+
+    update.bindingsCount = bindings.length
+
+    return update
   }
 }))
