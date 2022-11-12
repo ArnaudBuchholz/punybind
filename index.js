@@ -12,31 +12,48 @@
   // Stryker restore all
   'use strict'
 
-  function bindTextNode (node, bindings) {
-    const parsed = node.nodeValue.split(/{{((?:[^}]|}[^}])+)}}/)
+  function buildExpression (value) {
+    const parsed = value.split(/{{((?:[^}]|}[^}])+)}}/)
     if (parsed.length > 1) {
-      const source = `with (__context__) { return [${
+      const source = `with (__context__) try { return [${
         parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')
-      }].join('') }`
+      }].join('') } catch (e) { return '' }`
       // eslint-disable-next-line no-new-func
-      const expression = new Function(`return function(__context__) { ${source} }`)()
+      return new Function(`return function(__context__) { ${source} }`)()
+    }
+  }
 
+  function bindTextNode (node, bindings) {
+    const expression = buildExpression(node.nodeValue)
+    if (expression) {
       const parent = node.parentNode
       let value
 
-      bindings.push(function refreshNodeValue (context, changes) {
-        let newValue
-        try {
-          newValue = expression(context)
-        } catch (e) {
-          newValue = ''
-        }
+      bindings.push(function refreshTextNode (context, changes) {
+        const newValue = expression(context)
         if (newValue !== value) {
           const newChild = parent.ownerDocument.createTextNode(newValue)
           value = newValue
           changes.push(() => {
             parent.replaceChild(newChild, node)
             node = newChild
+          })
+        }
+      })
+    }
+  }
+
+  function bindAttribute (node, name, bindings) {
+    const expression = buildExpression(node.getAttribute(name))
+    if (expression) {
+      let value
+
+      bindings.push(function refreshAttribute (context, changes) {
+        const newValue = expression(context)
+        if (newValue !== value) {
+          value = newValue
+          changes.push(() => {
+            node.setAttribute(name, newValue)
           })
         }
       })
@@ -53,6 +70,9 @@
         bindTextNode(node, bindings)
       }
       if (node.nodeType === ELEMENT_NODE) {
+        for (const attr of node.attributes) {
+          bindAttribute(node, attr.name, bindings)
+        }
         Array.prototype.slice.call(node.childNodes).forEach(traverse)
       }
     }
