@@ -84,5 +84,36 @@ describe('punybind', () => {
         expect(dom.window.document.body.innerHTML).toBe('&lt;script&gt;alert(0)&lt;/alert&gt;')
       })
     })
+
+    describe('attribute binding', () => {
+      it('mixes static and dynamic content', async () => {
+        const dom = new JSDOM('<body style="background-color: {{ color }};" />')
+        const update = punybind(dom.window.document.body)
+        await update({
+          color: 'red'
+        })
+        expect(dom.window.document.body.getAttribute('style')).toBe('background-color: red;')
+      })
+
+      it('changes the attribute only when the value changes', async () => {
+        const dom = new JSDOM('<body style="background-color: {{ color }};" />')
+        let changes = 0
+        const observer = new dom.window.MutationObserver(() => ++changes)
+        observer.observe(dom.window.document.body, {
+          attributes: true,
+          childList: true,
+          subtree: true
+        })
+        const update = punybind(dom.window.document.body)
+        await update({
+          color: 'red'
+        })
+        expect(changes).toBe(1)
+        await update({
+          color: 'red'
+        })
+        expect(changes).toBe(1)
+      })
+    })
   })
 })
