@@ -12,25 +12,33 @@
   // Stryker restore all
   'use strict'
 
-  function buildExpression (value) {
+  const $for = '{{for}}'
+
+  function compile (expression) {
+    const source = `with (__context__) try { return ${
+      expression
+    } } catch (e) { return '' }`
+    // eslint-disable-next-line no-new-func
+    return new Function(`return function(__context__) { ${source} }`)()
+  }
+
+  function fromBoundValue (value) {
     const parsed = value.split(/{{((?:[^}]|}[^}])+)}}/)
     if (parsed.length > 1) {
-      const source = `with (__context__) try { return [${
+      return compile(`[${
         parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')
-      }].join('') } catch (e) { return '' }`
-      // eslint-disable-next-line no-new-func
-      return new Function(`return function(__context__) { ${source} }`)()
+      }].join('')`)
     }
   }
 
   function bindTextNode (node, bindings) {
-    const expression = buildExpression(node.nodeValue)
-    if (expression) {
+    const valueFactory = fromBoundValue(node.nodeValue)
+    if (valueFactory) {
       const parent = node.parentNode
       let value
 
       bindings.push(function refreshTextNode (context, changes) {
-        const newValue = expression(context)
+        const newValue = valueFactory(context)
         if (newValue !== value) {
           const newChild = parent.ownerDocument.createTextNode(newValue)
           value = newValue
@@ -44,12 +52,12 @@
   }
 
   function bindAttribute (node, name, bindings) {
-    const expression = buildExpression(node.getAttribute(name))
-    if (expression) {
+    const valueFactory = fromBoundValue(node.getAttribute(name))
+    if (valueFactory) {
       let value
 
       bindings.push(function refreshAttribute (context, changes) {
-        const newValue = expression(context)
+        const newValue = valueFactory(context)
         if (newValue !== value) {
           value = newValue
           changes.push(() => {
@@ -58,6 +66,60 @@
         }
       })
     }
+  }
+
+  function bindIterator (node, bindings) {
+    const forValue = node.getAttribute($for)
+    const match = /(\w+)(?:\s*,\s*(\w+))?\s+of\s+(.*)/.exec(forValue)
+    if (!match) {
+      return
+    }
+    const [, valueName, indexName, iterator] = match
+    const iteratorFactory = compile(iterator)
+    if (!iteratorFactory) {
+      return
+    }
+
+    const parent = node.parentNode
+    const template = node.ownerDocument.createElement('template')
+    parent.insertBefore(template, node)
+    template.appendChild(node)
+    node.removeAttribute($for)
+
+    const nodes = []
+
+    bindings.push(async function refreshIterator (context, changes) {
+      if (nodes.length) {
+        changes.push(function () {
+          this.forEach(node => parent.removeChild(node))
+        }.bind([...nodes]))
+      }
+      nodes.length = 0
+
+      const iterator = iteratorFactory(context)
+      let index = -1
+      for await (const item of iterator) {
+        ++index
+        if (item === undefined) {
+          continue
+        }
+
+        const instance = template.firstChild.cloneNode(true)
+        nodes.push(instance)
+        const subBindings = parse(instance)
+
+        changes.push(function () {
+          parent.insertBefore(instance, template)
+        })
+
+        const subContext = Object.assign(Object.create(context), {
+          [valueName]: item,
+          [indexName]: index
+        })
+
+        await collectChanges(subBindings, subContext, changes)
+      }
+    })
   }
 
   function parse (root) {
@@ -71,7 +133,11 @@
       }
       if (node.nodeType === ELEMENT_NODE) {
         for (const attr of node.attributes) {
-          bindAttribute(node, attr.name, bindings)
+          if (attr.name === $for) {
+            bindIterator(node, bindings)
+          } else {
+            bindAttribute(node, attr.name, bindings)
+          }
         }
         Array.prototype.slice.call(node.childNodes).forEach(traverse)
       }
@@ -82,16 +148,30 @@
     return bindings
   }
 
+  async function collectChanges (bindings, context, changes) {
+    for (const binding of bindings) {
+      await binding(context, changes)
+    }
+  }
+
   exports.punybind = function (root) {
     const bindings = parse(root)
 
-    function update (context) {
+    async function update (context) {
       const changes = []
-      bindings.forEach(binding => binding(context, changes))
-      changes.forEach(change => change())
+      await collectChanges(bindings, context, changes)
+      for (const change of changes) {
+        await change()
+      }
     }
 
-    update.bindingsCount = bindings.length
+    Object.defineProperties(update, {
+      bindingsCount: {
+        value: bindings.length,
+        writable: false,
+        configurable: false
+      }
+    })
 
     return update
   }
