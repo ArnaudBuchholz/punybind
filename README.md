@@ -4,13 +4,13 @@ A minimalist binding helper.
 
 ## Usage
 
-* Inject the punybind helper
+### Inject the punybind helper
 
 ```html
 <script src="punybind.js"></script>
 ``` 
 
-* Define bound sections in the HTML
+### Define bound sections in the HTML
 
 ```html
 <html>
@@ -20,19 +20,34 @@ A minimalist binding helper.
 </html>
 ``` 
 
-* Bind the section
+### Bind the section
 
 ```JavaScript
 const update = punybind(document.head)
 ```
 
-* Update by passing the context object
+The update method contains the following properties :
+  * `bindingsCount` (number) : The number of bindings detected
+
+### Update by passing a context object
 
 ```JavaScript
-update({ title: 'Hello World !' })
+await update({ title: 'Hello World !' })
 ```
 
-* Enjoy !
+### Enjoy !
+
+## Reactive update
+
+```JavaScript
+const update = punybind(document.querySelector('bound'), {
+  title: 'Hello World !'
+})
+const { model } = update
+model.title = 'It works !'
+
+```
+
 
 ## Implementation notes
 
