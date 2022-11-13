@@ -12,8 +12,6 @@
   // Stryker restore all
   'use strict'
 
-  const $for = '{{for}}'
-
   function compile (expression) {
     const source = `with (__context__) try { return ${
       expression
@@ -67,6 +65,8 @@
       })
     }
   }
+
+  const $for = '{{for}}'
 
   function bindIterator (node, bindings) {
     const forValue = node.getAttribute($for)
