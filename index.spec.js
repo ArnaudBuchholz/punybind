@@ -218,6 +218,27 @@ describe('punybind', () => {
           ]
         })
       })
+
+      it('empties the content if an error occurs', async () => {
+        const dom = new JSDOM(`<body>
+  <h1>before</h1>
+  <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
+  <h1>after</h1>
+<body>`)
+        const update = punybind(dom.window.document.body)
+        await update({
+          get items () {
+            throw new Error()
+          }
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+      })
     })
   })
 })
