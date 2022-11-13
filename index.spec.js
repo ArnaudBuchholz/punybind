@@ -1,6 +1,30 @@
 const { punybind } = require('./index.js')
 const { JSDOM } = require('jsdom')
 
+const ELEMENT_NODE = 1
+const TEXT_NODE = 3
+
+function dom2json (node) {
+  if (node.nodeType === TEXT_NODE) {
+    return node.nodeValue.trim()
+  }
+  if (node.nodeType === ELEMENT_NODE) {
+    const content = Array.prototype.slice.call(node.childNodes)
+      .map(dom2json)
+      .filter(json => !!json)
+    if (node.attributes.length) {
+      const attributes = {}
+      for (const attr of node.attributes) {
+        attributes[`@${attr.name}`] = attr.value
+      }
+      content.unshift(attributes)
+    }
+    return {
+      [node.nodeName.toLowerCase()]: content
+    }
+  }
+}
+
 describe('punybind', () => {
   it('imports punybind', () => {
     expect(typeof punybind).toBe('function')
@@ -184,11 +208,15 @@ describe('punybind', () => {
             text: 'second'
           }]
         })
-        expect(dom.window.document.body.innerHTML).toBe(`
-  <h1>before</h1>
-  <div>first 0</div><div>second 1</div><template></template>
-  <h1>after</h1>
-`)
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: ['first 0'] },
+            { div: ['second 1'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
       })
     })
   })
