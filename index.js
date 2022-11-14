@@ -16,8 +16,12 @@
     const source = `with (__context__) try { return ${
       expression
     } } catch (e) { return '' }`
-    // eslint-disable-next-line no-new-func
-    return new Function(`return function(__context__) { ${source} }`)()
+    try {
+      // eslint-disable-next-line no-new-func
+      return new Function(`return function(__context__) { ${source} }`)()
+    } catch (e) {
+      // ignore
+    }
   }
 
   function fromBoundValue (value) {
@@ -86,38 +90,42 @@
     template.appendChild(node)
     node.removeAttribute($for)
 
-    const nodes = []
+    const instances = []
 
     bindings.push(async function refreshIterator (context, changes) {
-      if (nodes.length) {
-        changes.push(function () {
-          this.forEach(node => parent.removeChild(node))
-        }.bind([...nodes]))
-      }
-      nodes.length = 0
-
       const iterator = iteratorFactory(context)
       let index = -1
       for await (const item of iterator) {
         ++index
-        if (item === undefined) {
-          continue
+
+        if (index === instances.length) {
+          const instance = template.firstChild.cloneNode(true)
+          instances.push({
+            instance,
+            bindings: parse(instance)
+          })
+          changes.push(function () {
+            parent.insertBefore(instance, template)
+          })
         }
 
-        const instance = template.firstChild.cloneNode(true)
-        nodes.push(instance)
-        const subBindings = parse(instance)
+        await collectChanges(
+          instances[index].bindings,
+          Object.assign(Object.create(context), {
+            [valueName]: item,
+            [indexName]: index
+          }),
+          changes
+        )
+      }
 
+      ++index
+
+      if (index < instances.length) {
         changes.push(function () {
-          parent.insertBefore(instance, template)
-        })
-
-        const subContext = Object.assign(Object.create(context), {
-          [valueName]: item,
-          [indexName]: index
-        })
-
-        await collectChanges(subBindings, subContext, changes)
+          this.forEach(({ instance }) => parent.removeChild(instance))
+        }.bind(instances.slice(index)))
+        instances.length = index
       }
     })
   }
@@ -132,12 +140,12 @@
         bindTextNode(node, bindings)
       }
       if (node.nodeType === ELEMENT_NODE) {
+        if (node.getAttribute($for)) {
+          bindIterator(node, bindings)
+          return
+        }
         for (const attr of node.attributes) {
-          if (attr.name === $for) {
-            bindIterator(node, bindings)
-          } else {
-            bindAttribute(node, attr.name, bindings)
-          }
+          bindAttribute(node, attr.name, bindings)
         }
         Array.prototype.slice.call(node.childNodes).forEach(traverse)
       }
