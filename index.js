@@ -25,7 +25,7 @@
   }
 
   function fromBoundValue (value) {
-    const parsed = value.split(/{{((?:[^}]|}[^}])+)}}/)
+    const parsed = value.split(/{{((?:[^}])+)}}/)
     if (parsed.length > 1) {
       return compile(`[${
         parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')
@@ -74,7 +74,7 @@
 
   function bindIterator (node, bindings) {
     const forValue = node.getAttribute($for)
-    const match = /(\w+)(?:\s*,\s*(\w+))?\s+of\s+(.*)/.exec(forValue)
+    const match = /^\s*(\w+)(?:\s*,\s*(\w+))?\s+of\s(.*)/.exec(forValue)
     if (!match) {
       return
     }
@@ -176,8 +176,7 @@
     Object.defineProperties(update, {
       bindingsCount: {
         value: bindings.length,
-        writable: false,
-        configurable: false
+        writable: false
       }
     })
 
