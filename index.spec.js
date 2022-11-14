@@ -295,6 +295,7 @@ describe('punybind', () => {
             { h1: ['after'] }
           ]
         })
+        const insertBefore = jest.spyOn(dom.window.document.body, 'insertBefore')
         await update({
           items: [{
             text: 'third'
@@ -302,6 +303,7 @@ describe('punybind', () => {
             text: 'fourth'
           }]
         })
+        expect(insertBefore).not.toHaveBeenCalled()
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
