@@ -184,6 +184,8 @@ describe('punybind', () => {
         '<div {{for}}="item">', // of expected
         '<div {{for}}="item in items">', // of expected
         '<div {{for}}="(item, index) of items">', // no parenthesis expected
+        '<div {{for}}="item-, index of items">', // invalid name
+        '<div {{for}}="item, -index of items">', // invalid name
         '<div {{for}}="item, index of">', // missing expression
         '<div {{for}}="item, index of ()">' // invalid expression
       ]
@@ -193,6 +195,23 @@ describe('punybind', () => {
           const dom = new JSDOM(`<body>${invalidSyntax}</body>`)
           const update = punybind(dom.window.document.body)
           expect(update.bindingsCount).toBe(0)
+        })
+      })
+
+      const validSyntaxes = [
+        '<div {{for}}=" item of items">',
+        '<div {{for}}="item,index of items">',
+        '<div {{for}}="item, index of items">',
+        '<div {{for}}="item , index of items">',
+        '<div {{for}}="item, index  of items">',
+        '<div {{for}}="item, index of  items">'
+      ]
+
+      validSyntaxes.forEach(validSyntax => {
+        it(`accepts valid syntax: ${validSyntax}`, async () => {
+          const dom = new JSDOM(`<body>${validSyntax}</body>`)
+          const update = punybind(dom.window.document.body)
+          expect(update.bindingsCount).toBe(1)
         })
       })
 
@@ -224,7 +243,7 @@ describe('punybind', () => {
       it('empties the content if an error occurs', async () => {
         const dom = new JSDOM(`<body>
   <h1>before</h1>
-  <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
+  <div {{for}}="item of items">{{ item.text + ' ' + index }}</div>
   <h1>after</h1>
 <body>`)
         const update = punybind(dom.window.document.body)
@@ -236,6 +255,58 @@ describe('punybind', () => {
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+      })
+
+      it('dynamically updates the list', async () => {
+        const dom = new JSDOM(`<body>
+  <h1>before</h1>
+  <div {{for}}="item of items">{{ item.text }}</div>
+  <h1>after</h1>
+<body>`)
+        const update = punybind(dom.window.document.body)
+        await update({
+          items: [{
+            text: 'first'
+          }, {
+            text: 'second'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: ['first'] },
+            { div: ['second'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        const div = dom.window.document.body.querySelector('div')
+        div.id = 'flagged'
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'first'] },
+            { div: ['second'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        await update({
+          items: [{
+            text: 'third'
+          }, {
+            text: 'fourth'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'third'] },
+            { div: ['fourth'] },
             { template: expect.anything() },
             { h1: ['after'] }
           ]
