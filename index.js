@@ -121,12 +121,10 @@
 
       ++index
 
-      if (index < instances.length) {
-        changes.push(function () {
-          this.forEach(({ instance }) => parent.removeChild(instance))
-        }.bind(instances.slice(index)))
-        instances.length = index
-      }
+      changes.push(function () {
+        this.forEach(({ instance }) => parent.removeChild(instance))
+      }.bind(instances.slice(index)))
+      instances.length = index
     })
   }
 
