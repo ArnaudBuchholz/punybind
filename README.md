@@ -4,52 +4,73 @@ A minimalist binding helper.
 
 ## Usage
 
-### Inject the punybind helper
+### 1. Inject the punybind helper
 
 ```html
 <script src="punybind.js"></script>
 ``` 
 
-### Define bound sections in the HTML
+### 2. Define bindings in the HTML
 
 ```html
 <html>
   <head>
-    <title>{{ title }}</title>
+    <title>TODO list</title>
+    <script src="punybind.js"></script>
   </head>
+  <body>
+    <h1>{{ title }}</h1>
+    <ul>
+      <li
+        {{for}}="item of items"
+        class="todo {{ item.done ? 'done' : '' }}"
+      >{{ item.text }}</li>
+    </ul>
+  </body>
 </html>
 ``` 
 
-### Bind the section
+Text elements and attribute values can use `{{ }}` syntax.
+The special `{{for}}` attribute defines an iteration.
+
+### 3. Bind the section
 
 ```JavaScript
-const update = punybind(document.head)
+const update = await punybind(document.body)
 ```
 
-The update method contains the following properties :
+The `update` asynchronous method exposes the following properties :
   * `bindingsCount` (number) : The number of bindings detected
+  * `model` (object) : The reactive model (see below)
 
-### Update by passing a context object
+### 4. Update the section by passing a context object
 
 ```JavaScript
-await update({ title: 'Hello World !' })
+await update({
+  title: 'My TODO list',
+  items: [{
+    done: false,
+    text: 'Forget about heavy frameworks'
+  }, {
+    done: true,
+    text: 'Adopt punybind'
+  }]
+})
 ```
 
-### Enjoy !
+### 5. Enjoy !
 
-## Reactive update
+## Reactive model
 
 ```JavaScript
-const update = punybind(document.querySelector('bound'), {
+const { model } = await punybind(document.body, {
   title: 'Hello World !'
 })
-const { model } = update
-model.title = 'It works !'
-
+console.log(model.title) // Hello World !
+model.title = 'It works !' // Triggers update
 ```
-
 
 ## Implementation notes
 
 * Bindings are set at node / attribute level.
-* For a node, it is possible to mix static content with computed one but an error would clear the node value.
+* For a textual values, it is possible to mix static content with computed one but any error clears the whole value.
