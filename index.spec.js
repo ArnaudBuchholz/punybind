@@ -31,21 +31,21 @@ describe('punybind', () => {
   })
 
   describe('binding function', () => {
-    it('returns a function', () => {
+    it('returns a function', async () => {
       const dom = new JSDOM('<head><title>Title : {{ title }}</title></head>')
-      const update = punybind(dom.window.document.head)
+      const update = await punybind(dom.window.document.head)
       expect(typeof update).toBe('function')
     })
 
-    describe('bindingsCount', () => {
+    describe('bindingsCount property', () => {
       let update
 
-      beforeAll(() => {
+      beforeAll(async () => {
         const dom = new JSDOM('<head><title>Title : {{ title }}</title></head>')
-        update = punybind(dom.window.document.head)
+        update = await punybind(dom.window.document.head)
       })
 
-      it('exposes a bindingsCount', () => {
+      it('exposes a bindingsCount property', () => {
         expect(update.bindingsCount).toBe(1)
       })
 
@@ -77,7 +77,7 @@ describe('punybind', () => {
       invalidSyntaxes.forEach(invalidSyntax => {
         it(`ignores invalid syntax: ${invalidSyntax}`, async () => {
           const dom = new JSDOM(`<head><title>${invalidSyntax}</title></head>`)
-          const update = punybind(dom.window.document.head)
+          const update = await punybind(dom.window.document.head)
           expect(update.bindingsCount).toBe(0)
           await update({
             title: 'Hello World !'
@@ -88,7 +88,7 @@ describe('punybind', () => {
 
       it('mixes static and dynamic content', async () => {
         const dom = new JSDOM('<head><title>Title is {{ title }}.</title></head>')
-        const update = punybind(dom.window.document.head)
+        const update = await punybind(dom.window.document.head)
         await update({
           title: 'Hello World !'
         })
@@ -97,7 +97,7 @@ describe('punybind', () => {
 
       it('empties the content if an error occurs', async () => {
         const dom = new JSDOM('<head><title>Title : {{ error }}</title></head>')
-        const update = punybind(dom.window.document.head)
+        const update = await punybind(dom.window.document.head)
         await update({
           get error () {
             throw new Error()
@@ -115,20 +115,21 @@ describe('punybind', () => {
           childList: true,
           subtree: true
         })
-        const update = punybind(dom.window.document.head)
+        const update = await punybind(dom.window.document.head)
+        expect(changes).toBe(1) // Initial update
         await update({
           title: 'Hello World !'
         })
-        expect(changes).toBe(1)
+        expect(changes).toBe(2)
         await update({
           title: 'Hello World !'
         })
-        expect(changes).toBe(1)
+        expect(changes).toBe(2)
       })
 
       it('securely injects the content', async () => {
         const dom = new JSDOM('<body>{{ inject }}</body>')
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           inject: '<script>alert(0)</alert>'
         })
@@ -139,7 +140,7 @@ describe('punybind', () => {
     describe('attribute binding', () => {
       it('mixes static and dynamic content', async () => {
         const dom = new JSDOM('<body style="background-color: {{ color }};" />')
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           color: 'red'
         })
@@ -148,7 +149,7 @@ describe('punybind', () => {
 
       it('empties the content if an error occurs', async () => {
         const dom = new JSDOM('<body style="background-color: {{ error }};" />')
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           get error () {
             throw new Error()
@@ -166,15 +167,16 @@ describe('punybind', () => {
           childList: true,
           subtree: true
         })
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
+        expect(changes).toBe(1) // Initial update
         await update({
           color: 'red'
         })
-        expect(changes).toBe(1)
+        expect(changes).toBe(2)
         await update({
           color: 'red'
         })
-        expect(changes).toBe(1)
+        expect(changes).toBe(2)
       })
     })
 
@@ -193,7 +195,7 @@ describe('punybind', () => {
       invalidSyntaxes.forEach(invalidSyntax => {
         it(`ignores invalid syntax: ${invalidSyntax}`, async () => {
           const dom = new JSDOM(`<body>${invalidSyntax}</body>`)
-          const update = punybind(dom.window.document.body)
+          const update = await punybind(dom.window.document.body)
           expect(update.bindingsCount).toBe(0)
         })
       })
@@ -210,7 +212,7 @@ describe('punybind', () => {
       validSyntaxes.forEach(validSyntax => {
         it(`accepts valid syntax: ${validSyntax}`, async () => {
           const dom = new JSDOM(`<body>${validSyntax}</body>`)
-          const update = punybind(dom.window.document.body)
+          const update = await punybind(dom.window.document.body)
           expect(update.bindingsCount).toBe(1)
         })
       })
@@ -221,7 +223,7 @@ describe('punybind', () => {
   <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
   <h1>after</h1>
 <body>`)
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           items: [{
             text: 'first'
@@ -246,7 +248,7 @@ describe('punybind', () => {
   <div {{for}}="item of items">{{ item.text + ' ' + index }}</div>
   <h1>after</h1>
 <body>`)
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           get items () {
             throw new Error()
@@ -267,7 +269,7 @@ describe('punybind', () => {
   <div {{for}}="item of items">{{ item.text }}</div>
   <h1>after</h1>
 <body>`)
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           items: [{
             text: 'first'
@@ -321,7 +323,7 @@ describe('punybind', () => {
   <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
   <h1>after</h1>
 <body>`)
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           items: [{
             text: 'first'
@@ -370,7 +372,7 @@ describe('punybind', () => {
   <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
   <h1>after</h1>
 <body>`)
-        const update = punybind(dom.window.document.body)
+        const update = await punybind(dom.window.document.body)
         await update({
           items: [{
             text: 'first'
@@ -417,6 +419,59 @@ describe('punybind', () => {
             { h1: ['after'] }
           ]
         })
+      })
+    })
+  })
+
+  describe('reactive model', () => {
+    let dom
+    let update
+
+    beforeEach(async () => {
+      dom = new JSDOM(`<body>
+  <h1>{{ title }}</h1>
+  <ul>
+    <li
+      {{for}}="item of items"
+      class="todo {{ item.done ? 'done' : '' }}"
+    >{{ item.text }}</li>
+  </ul>
+</body>`)
+      update = await punybind(dom.window.document.body, {
+        title: 'Hello World !',
+        items: []
+      })
+    })
+
+    describe('model property', () => {
+      it('exposes a model property', () => {
+        expect(update.model).not.toBeUndefined()
+        expect(update.model.title).toBe('Hello World !')
+      })
+
+      it('is read-only', () => {
+        const { model } = update
+        update.model = 0
+        expect(update.model).toBe(model)
+      })
+
+      it('cannot be reconfigured', () => {
+        expect(() => {
+          Object.defineProperty(update, 'model', {
+            get () { return 0 }
+          }).toThrowError()
+        })
+      })
+    })
+
+    it('triggers an initial update', () => {
+      expect(dom2json(dom.window.document.body)).toMatchObject({
+        body: [
+          { h1: ['Hello World !'] },
+          { ul: [
+            { template: expect.anything() }
+          ]}
+        ]
       })
     })
   })
