@@ -160,7 +160,38 @@
     }
   }
 
-  exports.punybind = function (root) {
+  function observe (object, refresh) {
+    return new Proxy(object, {
+      get (obj, prop) {
+        const value = obj[prop]
+        const type = typeof value
+        if (type === 'function') {
+          const before = JSON.stringify(obj)
+          return function () {
+            const result = value.apply(obj, arguments)
+            if (JSON.stringify(obj) !== before) {
+              refresh()
+            }
+            return result
+          }
+        }
+        if (type === 'object') {
+          return observe(value, refresh)
+        }
+        return value
+      },
+      set (obj, prop, value) {
+        const previousValue = obj[prop]
+        if (previousValue !== value) {
+          obj[prop] = value
+          refresh()
+        }
+        return true
+      }
+    })
+  }
+
+  exports.punybind = async function (root, properties = {}) {
     const bindings = parse(root)
 
     async function update (context) {
@@ -171,9 +202,18 @@
       }
     }
 
+    await update(properties)
+    const model = observe(properties, () => {
+      update(properties)
+    })
+
     Object.defineProperties(update, {
       bindingsCount: {
         value: bindings.length,
+        writable: false
+      },
+      model: {
+        value: model,
         writable: false
       }
     })
