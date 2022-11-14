@@ -70,7 +70,8 @@ describe('punybind', () => {
         'Title : {{ title }',
         'Title : { { title }}',
         'Title : {{ title } }',
-        'Title : {{}}title}}'
+        'Title : {{}}title}}',
+        'Title : {{ () }}'
       ]
 
       invalidSyntaxes.forEach(invalidSyntax => {
@@ -183,13 +184,14 @@ describe('punybind', () => {
         '<div {{for}}="item">', // of expected
         '<div {{for}}="item in items">', // of expected
         '<div {{for}}="(item, index) of items">', // no parenthesis expected
-        '<div {{for}}="item, index of">' // missing expression
+        '<div {{for}}="item, index of">', // missing expression
+        '<div {{for}}="item, index of ()">' // invalid expression
       ]
 
       invalidSyntaxes.forEach(invalidSyntax => {
         it(`ignores invalid syntax: ${invalidSyntax}`, async () => {
           const dom = new JSDOM(`<body>${invalidSyntax}</body>`)
-          const update = punybind(dom.window.document.head)
+          const update = punybind(dom.window.document.body)
           expect(update.bindingsCount).toBe(0)
         })
       })
@@ -234,6 +236,110 @@ describe('punybind', () => {
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+      })
+
+      it('dynamically shrinks the list', async () => {
+        const dom = new JSDOM(`<body>
+  <h1>before</h1>
+  <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
+  <h1>after</h1>
+<body>`)
+        const update = punybind(dom.window.document.body)
+        await update({
+          items: [{
+            text: 'first'
+          }, {
+            text: 'second'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: ['first 0'] },
+            { div: ['second 1'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        const div = dom.window.document.body.querySelector('div')
+        div.id = 'flagged'
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'first 0'] },
+            { div: ['second 1'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        await update({
+          items: [{
+            text: 'third'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'third 0'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+      })
+
+      it('dynamically grows the list', async () => {
+        const dom = new JSDOM(`<body>
+  <h1>before</h1>
+  <div {{for}}="item, index of items">{{ item.text + ' ' + index }}</div>
+  <h1>after</h1>
+<body>`)
+        const update = punybind(dom.window.document.body)
+        await update({
+          items: [{
+            text: 'first'
+          }, {
+            text: 'second'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: ['first 0'] },
+            { div: ['second 1'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        const div = dom.window.document.body.querySelector('div')
+        div.id = 'flagged'
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'first 0'] },
+            { div: ['second 1'] },
+            { template: expect.anything() },
+            { h1: ['after'] }
+          ]
+        })
+        await update({
+          items: [{
+            text: 'first'
+          }, {
+            text: 'second'
+          }, {
+            text: 'third'
+          }]
+        })
+        expect(dom2json(dom.window.document.body)).toMatchObject({
+          body: [
+            { h1: ['before'] },
+            { div: [{ '@id': 'flagged' }, 'first 0'] },
+            { div: ['second 1'] },
+            { div: ['third 2'] },
             { template: expect.anything() },
             { h1: ['after'] }
           ]
