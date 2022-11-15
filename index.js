@@ -13,9 +13,9 @@
   'use strict'
 
   function compile (expression) {
-    const source = `with (__context__) try { return ${
+    const source = `try { with (__context__) { return ${
       expression
-    } } catch (e) { return '' }`
+    } } } catch (e) { return '' }`
     try {
       // eslint-disable-next-line no-new-func
       return new Function(`return function(__context__) { ${source} }`)()
