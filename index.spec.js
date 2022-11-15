@@ -245,7 +245,7 @@ describe('punybind', () => {
         })
       })
 
-      it('empties the content if an error occurs', async () => {
+      it('empties the content if an error occurs (absorbed)', async () => {
         const dom = new JSDOM(`<body>
   <h1>before</h1>
   <div {{for}}="item of items">{{ item.text + ' ' + index }}</div>
@@ -264,6 +264,20 @@ describe('punybind', () => {
             { h1: ['after'] }
           ]
         })
+      })
+
+      it('empties the content if an error occurs (explicit)', async () => {
+        const dom = new JSDOM(`<body>
+  <h1>before</h1>
+  <div {{for}}="item of items">{{ item.text + ' ' + index }}</div>
+  <h1>after</h1>
+<body>`)
+        const update = await punybind(dom.window.document.body)
+        await expect(update({
+          get items () {
+            return undefined
+          }
+        })).rejects.toThrowError()
       })
 
       it('dynamically updates the list', async () => {
