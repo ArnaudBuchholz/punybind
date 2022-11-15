@@ -565,9 +565,11 @@ describe('punybind', () => {
 
       it('does not refresh if property value does not change', async () => {
         expect(changes).toBe(0)
+        const previousDone = update.done()
         model.title = 'Hello World !'
         await update.done()
         expect(changes).toBe(0)
+        expect(update.done()).toBe(previousDone)
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['Hello World !'] },
@@ -621,7 +623,7 @@ describe('punybind', () => {
           })
         })
 
-        it('detects list change (pushing)', async () => {
+        it('detects list change (push)', async () => {
           model.items.push({
             done: true,
             text: 'It works !'
@@ -635,6 +637,59 @@ describe('punybind', () => {
                   { li: [{ '@class': 'todo' }, 'Forget about heavy frameworks'] },
                   { li: [{ '@class': 'todo done' }, 'Adopt punybind'] },
                   { li: [{ '@class': 'todo done' }, 'It works !'] },
+                  { template: expect.anything() }
+                ]
+              }
+            ]
+          })
+        })
+
+        it('detects list change (unshift)', async () => {
+          model.items.unshift({
+            done: true,
+            text: 'It works !'
+          })
+          await update.done()
+          expect(dom2json(dom.window.document.body)).toMatchObject({
+            body: [
+              { h1: ['Hello World !'] },
+              {
+                ul: [
+                  { li: [{ '@class': 'todo done' }, 'It works !'] },
+                  { li: [{ '@class': 'todo' }, 'Forget about heavy frameworks'] },
+                  { li: [{ '@class': 'todo done' }, 'Adopt punybind'] },
+                  { template: expect.anything() }
+                ]
+              }
+            ]
+          })
+        })
+
+        it('detects list change (pop)', async () => {
+          model.items.pop()
+          await update.done()
+          expect(dom2json(dom.window.document.body)).toMatchObject({
+            body: [
+              { h1: ['Hello World !'] },
+              {
+                ul: [
+                  { li: [{ '@class': 'todo' }, 'Forget about heavy frameworks'] },
+                  { template: expect.anything() }
+                ]
+              }
+            ]
+          })
+        })
+
+        it('detects list change (shift)', async () => {
+          model.items.shift()
+          await update.done()
+          expect(dom2json(dom.window.document.body)).toMatchObject({
+            body: [
+              { h1: ['Hello World !'] },
+              {
+                ul: [
+                  { li: [{ '@class': 'todo done' }, 'Adopt punybind'] },
                   { template: expect.anything() }
                 ]
               }
