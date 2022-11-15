@@ -165,13 +165,6 @@
       get (obj, prop) {
         const value = obj[prop]
         const type = typeof value
-        if (type === 'function') {
-          return function (...args) {
-            const result = value.apply(obj, args)
-            refresh()
-            return result
-          }
-        }
         if (type === 'object') {
           return observe(value, refresh)
         }
