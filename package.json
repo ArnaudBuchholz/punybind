@@ -4,6 +4,7 @@
   "description": "A minimalist binding helper",
   "main": "dist/punybind.js",
   "scripts": {
+    "pretest": "rimraf .stryker-tmp",
     "test": "jest",
     "mutate": "stryker run",
     "lint": "standard --fix",
@@ -28,6 +29,7 @@
     "@stryker-mutator/jest-runner": "^6.3.0",
     "jest": "^29.3.1",
     "jsdom": "^20.0.2",
+    "rimraf": "^3.0.2",
     "standard": "^17.0.0",
     "uglify-js": "^3.17.4"
   },
