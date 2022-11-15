@@ -28,8 +28,14 @@ function dom2json (node) {
 }
 
 describe('punybind', () => {
-  it('imports punybind', () => {
+  beforeAll(async () => {
+    // sanity check
     expect(typeof punybind).toBe('function')
+    const dom = new JSDOM('<head><title>Title : {{ title }}</title></head>')
+    await Promise.race([
+      punybind(dom.window.document.head),
+      new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeout')), 1000))
+    ])
   })
 
   describe('binding function', () => {
