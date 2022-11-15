@@ -220,19 +220,15 @@
       update(properties)
     })
 
+    const ro = value => ({
+      value,
+      writable: false
+    })
+
     Object.defineProperties(update, {
-      bindingsCount: {
-        value: bindings.length,
-        writable: false
-      },
-      model: {
-        value: model,
-        writable: false
-      },
-      done: {
-        value: () => done,
-        writable: false
-      }
+      bindingsCount: ro(bindings.length),
+      model: ro(model),
+      done: ro(() => done)
     })
 
     return update
