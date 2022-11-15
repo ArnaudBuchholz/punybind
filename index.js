@@ -185,23 +185,31 @@
     const bindings = parse(root)
 
     let done = Promise.resolve()
-    let resolver
+    let succeeded
+    let failed
     let lastContext
 
     async function debounced () {
-      const changes = []
-      await collectChanges(bindings, lastContext, changes)
-      for (const change of changes) {
-        await change()
+      try {
+        const changes = []
+        await collectChanges(bindings, lastContext, changes)
+        for (const change of changes) {
+          await change()
+        }
+        lastContext = undefined
+        succeeded(changes.length)
+      } catch (reason) {
+        failed(reason)
       }
-      lastContext = undefined
-      resolver()
     }
 
     async function update (context) {
       if (lastContext === undefined) {
         setTimeout(debounced, 0)
-        done = new Promise(resolve => { resolver = resolve })
+        done = new Promise((resolve, reject) => {
+          succeeded = resolve
+          failed = reject
+        })
       }
       lastContext = context
       return done
