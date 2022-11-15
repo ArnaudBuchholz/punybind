@@ -23,14 +23,14 @@ A minimalist binding helper.
     <ul>
       <li
         {{for}}="item of items"
-        class="todo {{ item.done ? 'done' : '' }}"
+        class="todo{{ item.done ? ' done' : '' }}"
       >{{ item.text }}</li>
     </ul>
   </body>
 </html>
 ``` 
 
-Text elements and attribute values can use `{{ }}` syntax.
+Text elements and attribute values can use `{{ }}` syntax.
 The special `{{for}}` attribute defines an iteration.
 
 ### 3. Bind the section
