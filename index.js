@@ -166,12 +166,9 @@
         const value = obj[prop]
         const type = typeof value
         if (type === 'function') {
-          const before = JSON.stringify(obj)
-          return function () {
-            const result = value.apply(obj, arguments)
-            if (JSON.stringify(obj) !== before) {
-              refresh()
-            }
+          return function (...args) {
+            const result = value.apply(obj, args)
+            refresh()
             return result
           }
         }
@@ -194,12 +191,27 @@
   exports.punybind = async function (root, properties = {}) {
     const bindings = parse(root)
 
-    async function update (context) {
+    let done = Promise.resolve()
+    let resolver
+    let lastContext
+
+    async function debounced () {
       const changes = []
-      await collectChanges(bindings, context, changes)
+      await collectChanges(bindings, lastContext, changes)
       for (const change of changes) {
         await change()
       }
+      lastContext = undefined
+      resolver()
+    }
+
+    async function update (context) {
+      if (lastContext === undefined) {
+        setTimeout(debounced, 0)
+        done = new Promise(resolve => { resolver = resolve })
+      }
+      lastContext = context
+      return done
     }
 
     await update(properties)
@@ -214,6 +226,10 @@
       },
       model: {
         value: model,
+        writable: false
+      },
+      done: {
+        value: () => done,
         writable: false
       }
     })
