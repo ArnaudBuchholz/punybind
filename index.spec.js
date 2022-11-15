@@ -549,7 +549,7 @@ describe('punybind', () => {
         const firstDone = update.done()
         model.title = 'Test 2'
         const secondDone = update.done()
-        expect(firstDone).toBe(secondDone);
+        expect(firstDone).toBe(secondDone)
         await update.done()
         expect(changes).toBe(1)
         expect(dom2json(dom.window.document.body)).toMatchObject({
