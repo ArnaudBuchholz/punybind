@@ -1,18 +1,7 @@
-(function (factory) {
-  // Stryker disable all : bootstrap code
-  'use strict'
-  // istanbul ignore else
-  if (typeof module !== 'undefined' && module.exports) {
-    factory(module.exports)
-  } else {
-    // eslint-disable-next-line no-eval
-    factory((0, eval)('this'))
-  }
-}(function (exports) {
-  // Stryker restore all
+(function (exports) {
   'use strict'
 
-  function compile (expression) {
+  const compile = expression => {
     const source = `try { with (__context__) { return ${
       expression
     } } } catch (e) { return '' }`
@@ -24,7 +13,7 @@
     }
   }
 
-  function fromBoundValue (value) {
+  const fromBoundValue = value => {
     const parsed = value.split(/{{((?:[^}])+)}}/)
     if (parsed.length > 1) {
       return compile(`[${
@@ -33,13 +22,13 @@
     }
   }
 
-  function bindTextNode (node, bindings) {
+  const bindTextNode = (node, bindings) => {
     const valueFactory = fromBoundValue(node.nodeValue)
     if (valueFactory) {
       const parent = node.parentNode
       let value
 
-      bindings.push(function refreshTextNode (context, changes) {
+      bindings.push((context, changes) => {
         const newValue = valueFactory(context)
         if (newValue !== value) {
           const newChild = parent.ownerDocument.createTextNode(newValue)
@@ -53,12 +42,12 @@
     }
   }
 
-  function bindAttribute (node, name, bindings) {
+  const bindAttribute = (node, name, bindings) => {
     const valueFactory = fromBoundValue(node.getAttribute(name))
     if (valueFactory) {
       let value
 
-      bindings.push(function refreshAttribute (context, changes) {
+      bindings.push((context, changes) => {
         const newValue = valueFactory(context)
         if (newValue !== value) {
           value = newValue
@@ -72,7 +61,7 @@
 
   const $for = '{{for}}'
 
-  function bindIterator (node, bindings) {
+  const bindIterator = (node, bindings) => {
     const forValue = node.getAttribute($for)
     const match = /^\s*(\w+)(?:\s*,\s*(\w+))?\s+of\s(.*)/.exec(forValue)
     if (!match) {
@@ -92,7 +81,7 @@
 
     const instances = []
 
-    bindings.push(async function refreshIterator (context, changes) {
+    bindings.push(async (context, changes) => {
       const iterator = iteratorFactory(context)
       let index = -1
       for await (const item of iterator) {
@@ -111,10 +100,11 @@
 
         await collectChanges(
           instances[index].bindings,
-          Object.assign(Object.create(context), {
+          {
+            ...context,
             [valueName]: item,
             [indexName]: index
-          }),
+          },
           changes
         )
       }
@@ -128,12 +118,12 @@
     })
   }
 
-  function parse (root) {
+  const parse = root => {
     const ELEMENT_NODE = 1
     const TEXT_NODE = 3
     const bindings = []
 
-    function traverse (node) {
+    const traverse = node => {
       if (node.nodeType === TEXT_NODE) {
         bindTextNode(node, bindings)
       }
@@ -154,13 +144,13 @@
     return bindings
   }
 
-  async function collectChanges (bindings, context, changes) {
+  const collectChanges = async (bindings, context, changes) => {
     for (const binding of bindings) {
       await binding(context, changes)
     }
   }
 
-  function observe (object, refresh) {
+  const observe = (object, refresh) => {
     return new Proxy(object, {
       get (obj, prop) {
         const value = obj[prop]
@@ -181,7 +171,7 @@
     })
   }
 
-  exports.punybind = async function (root, properties = {}) {
+  exports.punybind = async (root, properties = {}) => {
     const bindings = parse(root)
 
     let done = Promise.resolve()
@@ -189,7 +179,7 @@
     let failed
     let lastContext
 
-    async function debounced () {
+    const debounced = async () => {
       try {
         const changes = []
         await collectChanges(bindings, lastContext, changes)
@@ -203,7 +193,7 @@
       }
     }
 
-    async function update (context) {
+    const update = async (context) => {
       if (lastContext === undefined) {
         setTimeout(debounced, 0)
         done = new Promise((resolve, reject) => {
@@ -233,4 +223,5 @@
 
     return update
   }
-}))
+// eslint-disable-next-line no-eval
+}((0, eval)('this')))
