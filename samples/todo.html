@@ -1,0 +1,32 @@
+<html>
+  <head>
+    <title>TODO list</title>
+    <script src="../dist/punybind.js"></script>
+    <style>
+.done {
+  text-decoration: line-through;
+}
+    </style>
+  </head>
+  <body>
+    <h1>{{ title }}</h1>
+    <ul>
+      <li
+        {{for}}="item of items"
+        class="todo{{ item.done ? ' done' : '' }}"
+      >{{ item.text }}</li>
+    </ul>
+  </body>
+  <script>
+const { model } = punybind(document.body, {
+  title: 'My TODO list',
+  items: [{
+    done: false,
+    text: 'Forget about heavy frameworks'
+  }, {
+    done: true,
+    text: 'Adopt punybind'
+  }]
+})
+  </script>
+</html>
