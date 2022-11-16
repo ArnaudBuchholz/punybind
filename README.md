@@ -83,4 +83,4 @@ model.title = 'It works !' // Triggers update
 ## Implementation notes
 
 * This implementation is **not** compliant with [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).
-* For a textual values, it is possible to mix static content with computed one but any error clears the whole value.
+* For textual values, it is possible to mix static content with computed one but any error clears the whole value.
