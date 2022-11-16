@@ -1,6 +1,7 @@
 'use strict'
 
-const { punybind } = require('./index.js')
+require('./index.js')
+const { punybind } = global
 const { JSDOM } = require('jsdom')
 
 const ELEMENT_NODE = 1
