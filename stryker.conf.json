@@ -9,6 +9,9 @@
   "testRunner": "jest",
   "coverageAnalysis": "perTest",
   "mutate": [
-    "index.js"
-  ]
+    "punybind.js"
+  ],
+  "jest": {
+    "enableFindRelatedTests": false
+  }
 }
