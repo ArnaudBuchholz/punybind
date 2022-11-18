@@ -11,7 +11,7 @@
     "test": "jest",
     "mutate": "stryker run",
     "lint": "standard --fix",
-    "build": "uglifyjs index.js --compress --mangle -o dist/punybind.js",
+    "build": "uglifyjs punybind.js --compress --mangle -o dist/punybind.js",
     "serve": "reserve"
   },
   "repository": {
