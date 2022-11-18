@@ -42,12 +42,21 @@
     "env": [
       "browser",
       "jest"
-    ]
+    ],
+    "globals": [
+      "JSDOM",
+      "punybind",
+      "dom2json"
+    ],
+    "ignore": [
+      "dist/punybind.js"
+    ]    
   },
   "jest": {
+    "setupFilesAfterEnv": ["./tests/setup.js"],
     "collectCoverage": true,
     "collectCoverageFrom": [
-      "index.js"
+      "punybind.js"
     ],
     "coverageThreshold": {
       "global": {
