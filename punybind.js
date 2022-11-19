@@ -141,6 +141,7 @@
 
   const $if = '{{if}}'
   const $elseif = '{{elseif}}'
+  const $else = '{{else}}'
 
   const INSTANCE = 2
 
@@ -169,7 +170,10 @@
         conditionalChain.push([eiValueFactory, eiTemplate])
         nextSibling = eiTemplate.nextElementSibling
       } else {
-        // in case of {{else}} valueFactory always return true
+        if (nextSibling.hasAttribute($else)) {
+          const [, eiTemplate] = getTemplate(nextSibling, $else)
+          conditionalChain.push([() => true, eiTemplate])
+        }
         return false
       }
       return true
