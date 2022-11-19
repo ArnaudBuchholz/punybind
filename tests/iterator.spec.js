@@ -90,11 +90,19 @@ describe('iterators {{for}}', () => {
   <h1>after</h1>
 <body>`)
     const update = await punybind(dom.window.document.body)
-    await expect(update({
-      get items () {
-        return undefined
-      }
-    })).rejects.toThrowError()
+    // Mutation may prevent the update completion
+    let timeoutId
+    await Promise.race([
+      expect(update({
+        get items () {
+          return undefined
+        }
+      })).rejects.toThrowError(),
+      new Promise((resolve, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Timeout')), 1000)
+      })
+    ])
+    clearTimeout(timeoutId)
   })
 
   it('dynamically updates the list', async () => {
