@@ -22,7 +22,11 @@
     }
   }
 
+  const ELEMENT_NODE = 1
+  const TEXT_NODE = 3
+
   const attr = (node, name) => node.getAttribute(name)
+  const array = arrayLike => Array.prototype.slice.call(arrayLike)
 
   const bindTextNode = (node, bindings) => {
     const valueFactory = compileComposite(node.nodeValue)
@@ -84,6 +88,12 @@
     ]
   }
 
+  const remove = (parent, instances, changes) => {
+    changes.push(function () {
+      this.forEach(instance => parent.removeChild(instance[CLONE]))
+    }.bind(instances))
+  }
+
   const $for = '{{for}}'
 
   const bindIterator = (node, bindings) => {
@@ -124,15 +134,15 @@
 
       ++index
 
-      changes.push(function () {
-        this.forEach(instance => parent.removeChild(instance[CLONE]))
-      }.bind(instances.slice(index)))
+      remove(parent, instances.slice(index), changes)
       instances.length = index
     })
   }
 
   const $if = '{{if}}'
   const $elseif = '{{elseif}}'
+
+  const INSTANCE = 2
 
   const bindConditional = (node, bindings) => {
     const valueFactory = compile(attr(node, $if))
@@ -141,44 +151,53 @@
     }
 
     const [parent, template] = getTemplate(node, $if)
-    let instance
 
-    let nextSibling = template.nextElementSibling
-    while (nextSibling) {
+    const conditionalChain = [[valueFactory, template]]
+
+    const elements = array(parent.childNodes).filter(child => child.nodeType === ELEMENT_NODE)
+    const nodePos = elements.findIndex(element => element === template)
+    const siblings = elements.slice(nodePos + 1)
+
+    siblings.every(nextSibling => {
       const elseIf = attr(nextSibling, $elseif)
       if (elseIf) {
         const eiValueFactory = compile(elseIf)
         if (!eiValueFactory) {
-          break
+          return false
         }
-
         const [, eiTemplate] = getTemplate(nextSibling, $elseif)
-
+        conditionalChain.push([eiValueFactory, eiTemplate])
         nextSibling = eiTemplate.nextElementSibling
       } else {
-        break
+        // in case of {{else}} valueFactory always return true
+        return false
       }
-    }
+      return true
+    })
 
     bindings.push(async (context, changes) => {
-      const value = valueFactory(context)
-      if (value) {
-        if (!instance) {
-          instance = instantiate(template, changes)
+      let searchTrueCondition = true
+      const instancesToRemove = []
+      for (const condition of conditionalChain) {
+        const [valueFactory, template, instance] = condition
+
+        const value = searchTrueCondition && valueFactory(context)
+        if (value) {
+          searchTrueCondition = false
+          if (!instance) {
+            condition[INSTANCE] = instantiate(template, changes)
+          }
+          await collectChanges(condition[INSTANCE][BINDINGS], context, changes)
+        } else if (instance) {
+          instancesToRemove.push(instance)
+          condition[INSTANCE] = undefined
         }
-        await collectChanges(instance[BINDINGS], context, changes)
-      } else if (instance) {
-        changes.push(function () {
-          parent.removeChild(this[CLONE])
-        }.bind(instance))
-        instance = undefined
       }
+      remove(parent, instancesToRemove, changes)
     })
   }
 
   const parse = root => {
-    const ELEMENT_NODE = 1
-    const TEXT_NODE = 3
     const bindings = []
 
     const traverse = node => {
@@ -197,7 +216,7 @@
         for (const attr of node.attributes) {
           bindAttribute(node, attr.name, bindings)
         }
-        Array.prototype.slice.call(node.childNodes).forEach(traverse)
+        array(node.childNodes).forEach(traverse)
       }
     }
 
