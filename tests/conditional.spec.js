@@ -1,3 +1,5 @@
+'use strict'
+
 describe('conditional {{if}}', () => {
   const invalidSyntaxes = [
     '<div {{if}}="" />',
