@@ -13,7 +13,8 @@
     "mutate": "stryker run",
     "lint": "standard --fix",
     "build": "uglifyjs punybind.js --compress --mangle -o dist/punybind.js && node version",
-    "serve": "reserve"
+    "serve": "reserve",
+    "ci": "npm run test && npm run build && npm run test:minified"
   },
   "repository": {
     "type": "git",
