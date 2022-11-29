@@ -1,7 +1,5 @@
 'use strict'
 
-require('../punybind.js')
-const { punybind } = global
 const { JSDOM } = require('jsdom')
 global.JSDOM = JSDOM
 const { dom2json } = require('./dom2json.js')
