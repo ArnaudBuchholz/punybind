@@ -1,24 +1,21 @@
 (function (exports) {
   'use strict'
 
-  const compile = expression => {
-    const source = `try { with (__context__) { return ${
-      expression
-    } } } catch (e) { return '' }`
+  // eslint-disable-next-line no-new-func
+  const defaultCompiler = expression => new Function(`return function(_){try{with (_){return ${expression}}}catch(e){return ''}}`)()
+
+  const safeCompile = (expression, { compiler }) => {
     try {
-      // eslint-disable-next-line no-new-func
-      return new Function(`return function(__context__) { ${source} }`)()
+      return compiler(expression)
     } catch (e) {
       // ignore
     }
   }
 
-  const compileComposite = value => {
+  const safeCompileComposite = (value, options) => {
     const parsed = value.split(/{{((?:[^}])+)}}/)
     if (parsed.length > 1) {
-      return compile(`[${
-        parsed.map((expr, idx) => idx % 2 ? expr : `\`${expr}\``).join(',')
-      }].join('')`)
+      return safeCompile(parsed.map((expr, idx) => idx % 2 ? `(${expr})` : `\`${expr}\``).join('+'), options)
     }
   }
 
@@ -28,8 +25,8 @@
   const attr = (node, name) => node.getAttribute(name)
   const array = arrayLike => Array.prototype.slice.call(arrayLike)
 
-  const bindTextNode = (node, bindings) => {
-    const valueFactory = compileComposite(node.nodeValue)
+  const bindTextNode = (node, bindings, options) => {
+    const valueFactory = safeCompileComposite(node.nodeValue, options)
     if (valueFactory) {
       const parent = node.parentNode
       let value
@@ -48,8 +45,8 @@
     }
   }
 
-  const bindAttribute = (node, name, bindings) => {
-    const valueFactory = compileComposite(attr(node, name))
+  const bindAttribute = (node, name, bindings, options) => {
+    const valueFactory = safeCompileComposite(attr(node, name), options)
     if (valueFactory) {
       let value
 
@@ -77,14 +74,14 @@
   const CLONE = 0
   const BINDINGS = 1
 
-  const instantiate = (template, changes) => {
+  const instantiate = (template, changes, options) => {
     const clone = template.firstChild.cloneNode(true)
     changes.push(function () {
       template.parentNode.insertBefore(clone, template)
     })
     return [
       clone,
-      parse(clone)
+      parse(clone, options)
     ]
   }
 
@@ -96,14 +93,14 @@
 
   const $for = '{{for}}'
 
-  const bindIterator = (node, bindings) => {
+  const bindIterator = (node, bindings, options) => {
     const forValue = attr(node, $for)
     const match = /^\s*(\w+)(?:\s*,\s*(\w+))?\s+of\s(.*)/.exec(forValue)
     if (!match) {
       return
     }
     const [, valueName, indexName, iterator] = match
-    const iteratorFactory = compile(iterator)
+    const iteratorFactory = safeCompile(iterator, options)
     if (!iteratorFactory) {
       return
     }
@@ -118,7 +115,7 @@
         ++index
 
         if (index === instances.length) {
-          instances.push(instantiate(template, changes))
+          instances.push(instantiate(template, changes, options))
         }
 
         await collectChanges(
@@ -145,8 +142,8 @@
 
   const INSTANCE = 2
 
-  const bindConditional = (node, bindings) => {
-    const valueFactory = compile(attr(node, $if))
+  const bindConditional = (node, bindings, options) => {
+    const valueFactory = safeCompile(attr(node, $if), options)
     if (!valueFactory) {
       return
     }
@@ -162,7 +159,7 @@
     siblings.every(nextSibling => {
       const elseIf = attr(nextSibling, $elseif)
       if (elseIf) {
-        const eiValueFactory = compile(elseIf)
+        const eiValueFactory = safeCompile(elseIf, options)
         if (!eiValueFactory) {
           return false
         }
@@ -189,7 +186,7 @@
         if (value) {
           searchTrueCondition = false
           if (!instance) {
-            condition[INSTANCE] = instantiate(template, changes)
+            condition[INSTANCE] = instantiate(template, changes, options)
           }
           await collectChanges(condition[INSTANCE][BINDINGS], context, changes)
         } else if (instance) {
@@ -201,24 +198,24 @@
     })
   }
 
-  const parse = root => {
+  const parse = (root, options) => {
     const bindings = []
 
     const traverse = node => {
       if (node.nodeType === TEXT_NODE) {
-        bindTextNode(node, bindings)
+        bindTextNode(node, bindings, options)
       }
       if (node.nodeType === ELEMENT_NODE) {
         if (attr(node, $for)) {
-          bindIterator(node, bindings)
+          bindIterator(node, bindings, options)
           return
         }
         if (attr(node, $if)) {
-          bindConditional(node, bindings)
+          bindConditional(node, bindings, options)
           return
         }
         for (const attr of node.attributes) {
-          bindAttribute(node, attr.name, bindings)
+          bindAttribute(node, attr.name, bindings, options)
         }
         array(node.childNodes).forEach(traverse)
       }
@@ -256,8 +253,25 @@
     })
   }
 
-  exports.punybind = async (root, properties = {}) => {
-    const bindings = parse(root)
+  const ro = value => ({
+    value,
+    writable: false
+  })
+
+  const assignROProperties = (object, properties) => {
+    Object.defineProperties(
+      object,
+      Object.keys(properties).reduce((dict, property) => {
+        dict[property] = ro(properties[property])
+        return dict
+      }, {})
+    )
+  }
+
+  async function punybind (root, properties = {}) {
+    const bindings = parse(root, this || {
+      compiler: defaultCompiler
+    })
 
     let done = Promise.resolve()
     let succeeded
@@ -295,18 +309,19 @@
       update(properties)
     })
 
-    const ro = value => ({
-      value,
-      writable: false
-    })
-
-    Object.defineProperties(update, {
-      bindingsCount: ro(bindings.length),
-      model: ro(model),
-      done: ro(() => done)
+    assignROProperties(update, {
+      bindingsCount: bindings.length,
+      model,
+      done: () => done
     })
 
     return update
   }
-// eslint-disable-next-line no-eval
-}((0, eval)('this')))
+
+  assignROProperties(punybind, {
+    version: '0.0.0',
+    use: compiler => punybind.bind({ compiler })
+  })
+
+  exports.punybind = punybind
+}(this))
