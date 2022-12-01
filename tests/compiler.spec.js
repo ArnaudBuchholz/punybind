@@ -3,7 +3,9 @@
 const { punyexpr } = require('punyexpr')
 
 describe('compiler', () => {
-  const safepunybind = punybind.use(punyexpr)
+  const safepunybind = punybind.use({
+    compiler: punyexpr
+  })
 
   describe('text node', () => {
     let update
