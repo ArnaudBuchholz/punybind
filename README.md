@@ -10,7 +10,7 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 
-A minimalist *(⇡ check the install size)* one-way binding helper.
+A minimalist *(2889 bytes)* one-way binding helper.
 
 ## Usage
 
@@ -124,9 +124,30 @@ model.items.push({
 await done() // Wait for the DOM update to be completed
 ```
 
+## Customizing
+
+It is possible to tweak some settings with `punybind.use`, for instance :
+
+```javascript
+// see https://www.npmjs.com/package/punyexpr
+const safebind = punybind.use({
+  compiler: punyexpr
+})
+// safebind offers the same features as punybind
+const { model, done } = await safebind(document.body, {
+  title: 'Hello World !',
+  items: []
+})
+```
+
+Available options :
+
+* `compiler: (expression: string) => (context: object) => any`
+  * Function that *compiles* the expression and return a function that evaluates it with the given context. Default compiler uses an eval-like syntax.
+
 ## Implementation notes
 
-* The implementation is **not** compliant with [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).
+* The default expression compiler implementation is **not** compliant with [Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP).
 * **Only** properties coming from the contextual object can be used in evaluated expressions.
 * Bound elements are *hidden* under [`template` elements](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/template).
 * When any error occurs *(inconsistent binding, invalid syntax)*, the binding **silently** fails.
