@@ -33,6 +33,15 @@ describe('text', () => {
       expect(dom.window.document.title).toBe('Title is Hello World !.')
     })
 
+    it('properly escapes static strings', async () => {
+      const dom = new JSDOM('<head><title>\'\\{{ title }}\\\'</title></head>')
+      const update = await punybind(dom.window.document.head)
+      await update({
+        title: '\\\'\\'
+      })
+      expect(dom.window.document.title).toBe('\'\\\\\'\\\\\'')
+    })
+
     it('empties the content if an error occurs', async () => {
       const dom = new JSDOM('<head><title>Title : {{ error }}</title></head>')
       const update = await punybind(dom.window.document.head)
