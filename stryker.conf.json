@@ -11,6 +11,7 @@
   "mutate": [
     "punybind.js"
   ],
+  "timeoutFactor": 3,
   "jest": {
     "enableFindRelatedTests": false,
     "config": {
