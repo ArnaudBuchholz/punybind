@@ -2,11 +2,23 @@
   'use strict'
 
   // eslint-disable-next-line no-new-func
-  const defaultCompiler = expression => new Function(`return function(_){try{with (_){return ${expression}}}catch(e){return ''}}`)()
+  const defaultCompiler = expression => new Function(`return function(_){with (_){return ${expression}}}`)()
 
   const safeCompile = (expression, { compiler }) => {
     try {
-      return compiler(expression)
+      const compiled = compiler(expression)
+      return function (context) {
+        let result
+        try {
+          result = compiled(context)
+        } catch (e) {
+          // ignore
+        }
+        if (result === undefined) {
+          return ''
+        }
+        return result
+      }
     } catch (e) {
       // ignore
     }
@@ -14,8 +26,9 @@
 
   const safeCompileComposite = (value, options) => {
     const parsed = value.split(/{{((?:[^}])+)}}/)
+    const escape = str => str.replace(/\\|'/g, match => ({ '\\': '\\\\', '\'': '\\\'' }[match]))
     if (parsed.length > 1) {
-      return safeCompile(parsed.map((expr, idx) => idx % 2 ? `(${expr})` : `\`${expr}\``).join('+'), options)
+      return safeCompile(parsed.map((expr, idx) => idx % 2 ? `(${expr})` : `'${escape(expr)}'`).join('+'), options)
     }
   }
 
@@ -269,9 +282,7 @@
   }
 
   async function punybind (root, properties = {}) {
-    const bindings = parse(root, this || {
-      compiler: defaultCompiler
-    })
+    const bindings = parse(root, this)
 
     let done = Promise.resolve()
     let succeeded
@@ -318,10 +329,19 @@
     return update
   }
 
-  assignROProperties(punybind, {
-    version: '0.0.0',
-    use: compiler => punybind.bind({ compiler })
-  })
+  const use = (options) => {
+    const instance = punybind.bind(options)
+    assignROProperties(instance, {
+      version: '0.0.0',
+      use: addOptions => use({
+        ...options,
+        ...addOptions
+      })
+    })
+    return instance
+  }
 
-  exports.punybind = punybind
+  exports.punybind = use({
+    compiler: defaultCompiler
+  })
 }(this))
