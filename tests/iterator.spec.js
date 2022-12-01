@@ -90,19 +90,11 @@ describe('iterators {{for}}', () => {
   <h1>after</h1>
 <body>`)
     const update = await punybind(dom.window.document.body)
-    // Mutation may prevent the update completion
-    let timeoutId
-    await Promise.race([
-      expect(update({
-        get items () {
-          return undefined
-        }
-      })).resolves,
-      new Promise((resolve, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Timeout')), 1000)
-      })
-    ])
-    clearTimeout(timeoutId)
+    await safeWait(update({
+      get items () {
+        return undefined
+      }
+    }).resolves)
     expect(dom2json(dom.window.document.body)).toMatchObject({
       body: [
         { h1: ['before'] },
