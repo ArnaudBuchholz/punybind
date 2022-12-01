@@ -97,12 +97,19 @@ describe('iterators {{for}}', () => {
         get items () {
           return undefined
         }
-      })).rejects.toThrowError(),
+      })).resolves,
       new Promise((resolve, reject) => {
         timeoutId = setTimeout(() => reject(new Error('Timeout')), 1000)
       })
     ])
     clearTimeout(timeoutId)
+    expect(dom2json(dom.window.document.body)).toMatchObject({
+      body: [
+        { h1: ['before'] },
+        { template: expect.anything() },
+        { h1: ['after'] }
+      ]
+    })
   })
 
   it('dynamically updates the list', async () => {
