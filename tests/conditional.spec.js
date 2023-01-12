@@ -337,8 +337,8 @@ describe('conditional {{if}}', () => {
     beforeEach(async () => {
       dom = new JSDOM(`<body>
   <h1>before</h1>
-  <div {{if}}="hello">Hello World !</div>
-  <div {{else}}>Goodbye World !</div>
+  <div {{if}}="hello">Hello {{ who }} !</div>
+  <div {{else}}>Goodbye {{ who }} !</div>
   <h1>after</h1>
 <body>`)
       update = await punybind(dom.window.document.body)
@@ -346,7 +346,7 @@ describe('conditional {{if}}', () => {
         body: [
           { h1: ['before'] },
           { template: expect.anything() },
-          { div: ['Goodbye World !'] },
+          { div: ['Goodbye  !'] },
           { template: expect.anything() },
           { h1: ['after'] }
         ]
@@ -359,7 +359,8 @@ describe('conditional {{if}}', () => {
 
     it('shows if on truthy condition', async () => {
       await update({
-        hello: true
+        hello: true,
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
@@ -374,7 +375,8 @@ describe('conditional {{if}}', () => {
 
     it('shows else otherwise', async () => {
       await update({
-        hello: false
+        hello: false,
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
