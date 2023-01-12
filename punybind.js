@@ -36,8 +36,7 @@
   const TEXT_NODE = 3
 
   const attr = (node, name) => node.getAttribute(name)
-  const array = arrayLike => Array.prototype.slice.call(arrayLike)
-
+  
   const bindTextNode = (node, bindings, options) => {
     const valueFactory = safeCompileComposite(node.nodeValue, options)
     if (valueFactory) {
@@ -75,9 +74,11 @@
     }
   }
 
+  const TEMPLATE_TAG_NAME = 'template'
+
   const getTemplate = (node, attributeName) => {
     const parent = node.parentNode
-    const template = node.ownerDocument.createElement('template')
+    const template = node.ownerDocument.createElement(TEMPLATE_TAG_NAME)
     parent.insertBefore(template, node)
     template.appendChild(node)
     node.removeAttribute(attributeName)
@@ -161,20 +162,17 @@
       return
     }
 
+    let nextSibling = node.nextElementSibling
     const [parent, template] = getTemplate(node, $if)
 
     const conditionalChain = [[valueFactory, template]]
 
-    const elements = array(parent.childNodes).filter(child => child.nodeType === ELEMENT_NODE)
-    const nodePos = elements.findIndex(element => element === template)
-    const siblings = elements.slice(nodePos + 1)
-
-    siblings.every(nextSibling => {
+    while (nextSibling) {
       const elseIf = attr(nextSibling, $elseif)
       if (elseIf) {
         const eiValueFactory = safeCompile(elseIf, options)
         if (!eiValueFactory) {
-          return false
+          break
         }
         const [, eiTemplate] = getTemplate(nextSibling, $elseif)
         conditionalChain.push([eiValueFactory, eiTemplate])
@@ -184,10 +182,9 @@
           const [, eiTemplate] = getTemplate(nextSibling, $else)
           conditionalChain.push([() => true, eiTemplate])
         }
-        return false
+        break
       }
-      return true
-    })
+    }
 
     bindings.push(async (context, changes) => {
       let searchTrueCondition = true
@@ -218,7 +215,7 @@
       if (node.nodeType === TEXT_NODE) {
         bindTextNode(node, bindings, options)
       }
-      if (node.nodeType === ELEMENT_NODE) {
+      if (node.nodeType === ELEMENT_NODE && node.tagName.toLowerCase() !== TEMPLATE_TAG_NAME) {
         if (attr(node, $for)) {
           bindIterator(node, bindings, options)
           return
@@ -230,7 +227,11 @@
         for (const attr of node.attributes) {
           bindAttribute(node, attr.name, bindings, options)
         }
-        array(node.childNodes).forEach(traverse)
+        const childNodes = node.childNodes
+        let index = 0
+        while (index < childNodes.length) {
+          traverse(childNodes[index++])
+        }
       }
     }
 
