@@ -365,8 +365,8 @@ describe('conditional {{if}}', () => {
       })
     })
 
-    it('generates two bindings', async () => {
-      expect(update.bindingsCount).toBe(2)
+    it('generates only one binding', async () => {
+      expect(update.bindingsCount).toBe(1)
     })
 
     it('shows if on truthy condition', async () => {
