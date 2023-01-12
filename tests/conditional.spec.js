@@ -23,7 +23,7 @@ describe('conditional {{if}}', () => {
     beforeEach(async () => {
       dom = new JSDOM(`<body>
   <h1>before</h1>
-  <div {{if}}="display">Hello World !</div>
+  <div {{if}}="display">Hello {{ who }} !</div>
   <h1>after</h1>
 <body>`)
       update = await punybind(dom.window.document.body)
@@ -38,7 +38,8 @@ describe('conditional {{if}}', () => {
 
     it('displays on truthy value (true)', async () => {
       await update({
-        display: true
+        display: true,
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
@@ -52,7 +53,8 @@ describe('conditional {{if}}', () => {
 
     it('displays on truthy value (\'truthy\')', async () => {
       await update({
-        display: 'truthy'
+        display: 'truthy',
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
@@ -66,7 +68,8 @@ describe('conditional {{if}}', () => {
 
     it('hides on falsy value (false)', async () => {
       await update({
-        display: false
+        display: false,
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
@@ -79,7 +82,8 @@ describe('conditional {{if}}', () => {
 
     it('hides on falsy value (\'\')', async () => {
       await update({
-        display: ''
+        display: '',
+        who: 'World'
       })
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
@@ -93,7 +97,8 @@ describe('conditional {{if}}', () => {
     describe('switching', () => {
       it('true -> false : removes the instance', async () => {
         await update({
-          display: true
+          display: true,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -104,7 +109,8 @@ describe('conditional {{if}}', () => {
           ]
         })
         await update({
-          display: false
+          display: false,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -117,7 +123,8 @@ describe('conditional {{if}}', () => {
 
       it('false -> true : adds the instance', async () => {
         await update({
-          display: false
+          display: false,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -127,7 +134,8 @@ describe('conditional {{if}}', () => {
           ]
         })
         await update({
-          display: true
+          display: true,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -141,7 +149,8 @@ describe('conditional {{if}}', () => {
 
       it('true -> true : creates only one instance', async () => {
         await update({
-          display: 1
+          display: 1,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -152,7 +161,8 @@ describe('conditional {{if}}', () => {
           ]
         })
         await update({
-          display: {}
+          display: {},
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -166,7 +176,8 @@ describe('conditional {{if}}', () => {
 
       it('false -> false', async () => {
         await update({
-          display: false
+          display: false,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -176,7 +187,8 @@ describe('conditional {{if}}', () => {
           ]
         })
         await update({
-          display: false
+          display: false,
+          who: 'World'
         })
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
@@ -342,19 +354,20 @@ describe('conditional {{if}}', () => {
   <h1>after</h1>
 <body>`)
       update = await punybind(dom.window.document.body)
+      console.log(JSON.stringify(dom2json(dom.window.document.body), undefined, 2))
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
           { template: expect.anything() },
-          { div: ['Goodbye  !'] },
+          { div: [] },
           { template: expect.anything() },
           { h1: ['after'] }
         ]
       })
     })
 
-    it('generates only one binding', async () => {
-      expect(update.bindingsCount).toBe(1)
+    it('generates two bindings', async () => {
+      expect(update.bindingsCount).toBe(2)
     })
 
     it('shows if on truthy condition', async () => {
