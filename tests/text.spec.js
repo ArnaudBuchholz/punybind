@@ -24,13 +24,25 @@ describe('text', () => {
       })
     })
 
-    it('mixes static and dynamic content', async () => {
-      const dom = new JSDOM('<head><title>Title is {{ title }}.</title></head>')
-      const update = await punybind(dom.window.document.head)
-      await update({
-        title: 'Hello World !'
+    describe('mixing static and dynamic content', () => {
+      let dom
+      let update
+
+      beforeEach(async () => {
+        dom = new JSDOM('<head><title>Title is {{ title }}.</title></head>')
+        update = await punybind(dom.window.document.head)
       })
-      expect(dom.window.document.title).toBe('Title is Hello World !.')
+
+      it('empty the values when undefined', () => {
+        expect(dom.window.document.title).toBe('')
+      })
+
+      it('injects the value within the static content', async () => {
+        await update({
+          title: 'Hello World !'
+        })
+        expect(dom.window.document.title).toBe('Title is Hello World !.')
+      })
     })
 
     it('properly escapes static strings', async () => {
