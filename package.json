@@ -1,6 +1,6 @@
 {
   "name": "punybind",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "A minimalist binding helper",
   "main": "dist/punybind.js",
   "files": [
@@ -31,11 +31,11 @@
   },
   "homepage": "https://github.com/ArnaudBuchholz/punybind#readme",
   "devDependencies": {
-    "@stryker-mutator/core": "^6.3.0",
-    "@stryker-mutator/jest-runner": "^6.3.0",
+    "@stryker-mutator/core": "^6.3.1",
+    "@stryker-mutator/jest-runner": "^6.3.1",
     "jest": "^29.3.1",
-    "jsdom": "^20.0.2",
-    "punyexpr": "^1.0.0",
+    "jsdom": "^21.0.0",
+    "punyexpr": "^1.0.3",
     "reserve": "^1.15.2",
     "rimraf": "^3.0.2",
     "standard": "^17.0.0",
