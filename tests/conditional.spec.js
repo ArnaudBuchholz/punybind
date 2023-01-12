@@ -354,7 +354,6 @@ describe('conditional {{if}}', () => {
   <h1>after</h1>
 <body>`)
       update = await punybind(dom.window.document.body)
-      console.log(JSON.stringify(dom2json(dom.window.document.body), undefined, 2))
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
