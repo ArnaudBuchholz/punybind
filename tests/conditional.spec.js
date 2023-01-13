@@ -252,9 +252,6 @@ describe('conditional {{if}}', () => {
         body: [
           { h1: ['before'] },
           { template: expect.anything() },
-          { template: expect.anything() },
-          { template: expect.anything() },
-          { template: expect.anything() },
           { h1: ['after'] },
           { div: [{ '@{{elseif}}': 'true' }, 'Should be ignored (not in the sibling chain)'] }
         ]
@@ -275,9 +272,6 @@ describe('conditional {{if}}', () => {
             { h1: ['before'] },
             { div: ['Hello World !'] },
             { template: expect.anything() },
-            { template: expect.anything() },
-            { template: expect.anything() },
-            { template: expect.anything() },
             { h1: ['after'] },
             { div: [{ '@{{elseif}}': 'true' }, 'Should be ignored (not in the sibling chain)'] }
           ]
@@ -292,10 +286,7 @@ describe('conditional {{if}}', () => {
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
-            { template: expect.anything() },
             { div: ['Goodbye World !'] },
-            { template: expect.anything() },
-            { template: expect.anything() },
             { template: expect.anything() },
             { h1: ['after'] },
             { div: [{ '@{{elseif}}': 'true' }, 'Should be ignored (not in the sibling chain)'] }
@@ -311,9 +302,6 @@ describe('conditional {{if}}', () => {
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
-            { template: expect.anything() },
-            { template: expect.anything() },
-            { template: expect.anything() },
             { div: ['Not sure what to say'] },
             { template: expect.anything() },
             { h1: ['after'] },
@@ -330,9 +318,6 @@ describe('conditional {{if}}', () => {
         expect(dom2json(dom.window.document.body)).toMatchObject({
           body: [
             { h1: ['before'] },
-            { template: expect.anything() },
-            { template: expect.anything() },
-            { template: expect.anything() },
             { template: expect.anything() },
             { h1: ['after'] },
             { div: [{ '@{{elseif}}': 'true' }, 'Should be ignored (not in the sibling chain)'] }
@@ -357,7 +342,6 @@ describe('conditional {{if}}', () => {
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
-          { template: expect.anything() },
           { div: [] },
           { template: expect.anything() },
           { h1: ['after'] }
@@ -379,7 +363,6 @@ describe('conditional {{if}}', () => {
           { h1: ['before'] },
           { div: ['Hello World !'] },
           { template: expect.anything() },
-          { template: expect.anything() },
           { h1: ['after'] }
         ]
       })
@@ -393,7 +376,6 @@ describe('conditional {{if}}', () => {
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
-          { template: expect.anything() },
           { div: ['Goodbye World !'] },
           { template: expect.anything() },
           { h1: ['after'] }
