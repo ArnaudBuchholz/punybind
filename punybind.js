@@ -36,7 +36,7 @@
   const TEXT_NODE = 3
 
   const attr = (node, name) => node.getAttribute(name)
-  
+
   const bindTextNode = (node, bindings, options) => {
     const valueFactory = safeCompileComposite(node.nodeValue, options)
     if (valueFactory) {
@@ -76,20 +76,30 @@
 
   const TEMPLATE_TAG_NAME = 'template'
 
+  const addToTemplate = (node, attributeName, template) => {
+    const { nextElementSibling } = node
+    template.appendChild(node)
+    node.removeAttribute(attributeName)
+    return nextElementSibling
+  }
+
   const getTemplate = (node, attributeName) => {
     const parent = node.parentNode
     const template = node.ownerDocument.createElement(TEMPLATE_TAG_NAME)
     parent.insertBefore(template, node)
-    template.appendChild(node)
-    node.removeAttribute(attributeName)
+    addToTemplate(node, attributeName, template)
     return [parent, template]
   }
 
   const CLONE = 0
   const BINDINGS = 1
 
-  const instantiate = (template, changes, options) => {
-    const clone = template.firstChild.cloneNode(true)
+  const instantiate = (template, changes, options, index = 0) => {
+    let elementToClone = template.firstElementChild
+    while (index-- > 0) {
+      elementToClone = elementToClone.nextElementSibling
+    }
+    const clone = elementToClone.cloneNode(true)
     changes.push(function () {
       template.parentNode.insertBefore(clone, template)
     })
@@ -154,7 +164,7 @@
   const $elseif = '{{elseif}}'
   const $else = '{{else}}'
 
-  const INSTANCE = 2
+  const INSTANCE = 1
 
   const bindConditional = (node, bindings, options) => {
     const valueFactory = safeCompile(attr(node, $if), options)
@@ -165,7 +175,7 @@
     let nextSibling = node.nextElementSibling
     const [parent, template] = getTemplate(node, $if)
 
-    const conditionalChain = [[valueFactory, template]]
+    const conditionalChain = [[valueFactory]]
 
     while (nextSibling) {
       const elseIf = attr(nextSibling, $elseif)
@@ -174,13 +184,12 @@
         if (!eiValueFactory) {
           break
         }
-        const [, eiTemplate] = getTemplate(nextSibling, $elseif)
-        conditionalChain.push([eiValueFactory, eiTemplate])
-        nextSibling = eiTemplate.nextElementSibling
+        conditionalChain.push([eiValueFactory])
+        nextSibling = addToTemplate(nextSibling, $elseif, template)
       } else {
         if (nextSibling.hasAttribute($else)) {
-          const [, eiTemplate] = getTemplate(nextSibling, $else)
-          conditionalChain.push([() => true, eiTemplate])
+          addToTemplate(nextSibling, $else, template)
+          conditionalChain.push([() => true])
         }
         break
       }
@@ -189,14 +198,16 @@
     bindings.push(async (context, changes) => {
       let searchTrueCondition = true
       const instancesToRemove = []
+      let index = -1
       for (const condition of conditionalChain) {
-        const [valueFactory, template, instance] = condition
+        ++index
+        const [valueFactory, instance] = condition
 
         const value = searchTrueCondition && valueFactory(context)
         if (value) {
           searchTrueCondition = false
           if (!instance) {
-            condition[INSTANCE] = instantiate(template, changes, options)
+            condition[INSTANCE] = instantiate(template, changes, options, index)
           }
           await collectChanges(condition[INSTANCE][BINDINGS], context, changes)
         } else if (instance) {
