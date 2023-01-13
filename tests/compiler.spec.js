@@ -56,8 +56,6 @@ describe('compiler', () => {
           { h1: ['before'] },
           { div: ['Hello World !'] },
           { template: expect.anything() },
-          { template: expect.anything() },
-          { template: expect.anything() },
           { h1: ['after'] }
         ]
       })
@@ -70,9 +68,7 @@ describe('compiler', () => {
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
-          { template: expect.anything() },
           { div: ['Goodbye World !'] },
-          { template: expect.anything() },
           { template: expect.anything() },
           { h1: ['after'] }
         ]
@@ -85,8 +81,6 @@ describe('compiler', () => {
       expect(dom2json(dom.window.document.body)).toMatchObject({
         body: [
           { h1: ['before'] },
-          { template: expect.anything() },
-          { template: expect.anything() },
           { div: ['Not sure what to say !'] },
           { template: expect.anything() },
           { h1: ['after'] }
