@@ -74,8 +74,6 @@
     }
   }
 
-  const TEMPLATE_TAG_NAME = 'template'
-
   const addToTemplate = (node, attributeName, template) => {
     const { nextElementSibling } = node
     template.appendChild(node)
@@ -85,7 +83,7 @@
 
   const getTemplate = (node, attributeName) => {
     const parent = node.parentNode
-    const template = node.ownerDocument.createElement(TEMPLATE_TAG_NAME)
+    const template = node.ownerDocument.createElement('template')
     parent.insertBefore(template, node)
     addToTemplate(node, attributeName, template)
     return [parent, template]
@@ -226,7 +224,7 @@
       if (node.nodeType === TEXT_NODE) {
         bindTextNode(node, bindings, options)
       }
-      if (node.nodeType === ELEMENT_NODE && node.tagName.toLowerCase() !== TEMPLATE_TAG_NAME) {
+      if (node.nodeType === ELEMENT_NODE) {
         if (attr(node, $for)) {
           bindIterator(node, bindings, options)
           return
