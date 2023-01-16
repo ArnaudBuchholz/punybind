@@ -1,6 +1,6 @@
 {
   "name": "punybind",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "description": "A minimalist binding helper",
   "main": "dist/punybind.js",
   "files": [
@@ -12,7 +12,7 @@
     "test:minified": "jest --no-coverage --setupFilesAfterEnv ./tests/minified.js",
     "mutate": "stryker run",
     "lint": "standard --fix",
-    "build": "uglifyjs punybind.js --compress --mangle -o dist/punybind.js && node version",
+    "build": "uglifyjs punybind.js --compress --mangle -o dist/punybind.js && node version && node update-readme",
     "serve": "reserve",
     "ci": "npm run test && npm run build && npm run test:minified"
   },
@@ -37,7 +37,7 @@
     "jsdom": "^21.0.0",
     "punyexpr": "^1.0.3",
     "reserve": "^1.15.2",
-    "rimraf": "^3.0.2",
+    "rimraf": "^4.0.7",
     "standard": "^17.0.0",
     "uglify-js": "^3.17.4"
   },
