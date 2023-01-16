@@ -10,5 +10,5 @@
 [![MIT License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://img.shields.io/badge/-documentation-blueviolet)](https://github.com/ArnaudBuchholz/punybind/tree/master/doc/README.md)
 
-A minimalist *(2918 bytes)*, one-way reactive binding helper for HTML, see the [usage documentation](https://github.com/ArnaudBuchholz/punybind/tree/master/doc/usage.md).
+A minimalist *(2918 bytes)*, one-way reactive binding helper for HTML, see the [usage documentation](https://arnaudbuchholz.github.io/punybind/doc/usage.html).
 
